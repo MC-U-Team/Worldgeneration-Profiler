@@ -1,0 +1,35 @@
+modLoader="javafml"
+loaderVersion="[31,)"
+issueTrackerURL="https://github.com/MC-U-Team/Worldgeneration-Profiler/issues"
+displayURL="https://u-team.info/mods/worldgenerationprofiler"
+logoFile="logo.png"
+credits="Team U-Team"
+authors="HyCraftHD"
+
+[[mods]]
+	modId="worldgenerationprofiler"
+	version="${file.jarVersion}"
+	displayName="World Generation Profiler"
+	updateJSONURL="https://api.u-team.info/update/worldgenerationprofiler.json"
+	description="Mod which profiles your worldgeneration."
+	
+	[[dependencies.worldgenerationprofiler]]
+	    modId="forge"
+	    mandatory=true
+	    versionRange="[31.1.12,)"
+	    ordering="NONE"
+	    side="BOTH"
+	
+	[[dependencies.worldgenerationprofiler]]
+	    modId="minecraft"
+	    mandatory=true
+	    versionRange="[1.15.2]"
+	    ordering="NONE"
+	    side="BOTH"
+	    
+	[[dependencies.worldgenerationprofiler]]
+	    modId="uteamcore"
+	    mandatory=true
+	    versionRange="[2.10.6.155,)"
+	    ordering="NONE"
+	    side="BOTH"
