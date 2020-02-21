@@ -8,7 +8,7 @@
 ![Discord](https://img.shields.io/discord/297104769649213441?label=Discord)
 ](https://discordapp.com/invite/QXbWS36)
 
-### This mod adds three new backpacks to the game which enhance your gaming experience.
+### Mod which profiles your worldgeneration.
 
 - Download on [curseforge](https://www.curseforge.com/minecraft/mc-mods/worldgeneration-profiler).  
 - Find more information on our [website](https://u-team.info/mods/worldgenerationprofiler).
