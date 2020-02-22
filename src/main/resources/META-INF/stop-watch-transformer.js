@@ -54,9 +54,23 @@ function injectTimerAtBiomeDecorate(methodNode, instructions) {
 	if(insertStopTimerNode.getType() != 0) {
 		throw "The insert stop timer node is not a ins node"
 	}
-	instructions.insert(insertStopTimerNode, createStopTimerCode())
+	
+	var stopTimerInsList = createStopTimerCode()
+	
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 0))
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 10))
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 7))
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 20))
+	stopTimerInsList.add(ASMAPI.buildMethodCall(
+			"info/u_team/world_generation_profiler/hook/StopWatchHook",
+			"decorateHook",
+			"(Lnet/minecraft/world/biome/Biome;Lnet/minecraft/world/gen/feature/ConfiguredFeature;Lnet/minecraft/util/math/BlockPos;Lcom/google/common/base/Stopwatch;)V",
+			ASMAPI.MethodType.STATIC
+	))
+	
+	instructions.insert(insertStopTimerNode, stopTimerInsList)
 	 
-	printInstructions(instructions)	//Debug
+	printInstructions(instructions)	// Debug
 }
 
 function createStartTimerCode() {
