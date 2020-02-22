@@ -1,16 +1,20 @@
 function initializeCoreMod() {
-	Opcodes = Java.type("org.objectweb.asm.Opcodes");
+	Opcodes = Java.type("org.objectweb.asm.Opcodes")
+	
+	ASMAPI = Java.type("net.minecraftforge.coremod.api.ASMAPI")
+	
+	VarInsnNode = Java.type("org.objectweb.asm.tree.VarInsnNode")
+	MethodInsnNode = Java.type("org.objectweb.asm.tree.MethodInsnNode")
+	InsnNode = Java.type("org.objectweb.asm.tree.InsnNode")
+	InsList = Java.type("org.objectweb.asm.tree.InsnList")
+	LabelNode = Java.type("org.objectweb.asm.tree.LabelNode")
+	
+	INVOKESTATIC = Opcodes.INVOKESTATIC
+	INVOKEVIRTUAL = Opcodes.INVOKEVIRTUAL
+	ALOAD = Opcodes.ALOAD
+	ASTORE = Opcodes.ASTORE
+	POP = Opcodes.POP
 
-	VarInsnNode = Java.type("org.objectweb.asm.tree.VarInsnNode");
-	MethodInsnNode = Java.type("org.objectweb.asm.tree.MethodInsnNode");
-	InsnNode = Java.type("org.objectweb.asm.tree.InsnNode");
-	InsList = Java.type("org.objectweb.asm.tree.InsnList");
-	LabelNode = Java.type("org.objectweb.asm.tree.LabelNode");
-	
-	INVOKESTATIC = Opcodes.INVOKESTATIC;
-	ALOAD = Opcodes.ALOAD;
-	FRETURN = Opcodes.FRETURN;
-	
 	return {
 		"Biome#decorate" : {
 			"target" : {
@@ -20,36 +24,99 @@ function initializeCoreMod() {
 				"methodDesc" : "(Lnet/minecraft/world/gen/GenerationStage$Decoration;Lnet/minecraft/world/gen/ChunkGenerator;Lnet/minecraft/world/IWorld;JLnet/minecraft/util/SharedSeedRandom;Lnet/minecraft/util/math/BlockPos;)V"
 			},
 			"transformer" : function(methodNode) {
-				injectHook(methodNode.instructions);
+				injectTimerStart(methodNode, methodNode.instructions);
 				return methodNode;
 			}
 		}
 	}
 }
 
-function injectHook(instructions) {
-	list("BEFORE ", instructions)
-
-	var beforeList = new InsList()
+function injectTimerStart(methodNode, instructions) {
+		
+	var placeMethodNode = ASMAPI.findFirstMethodCall(
+			methodNode, 
+			ASMAPI.MethodType.VIRTUAL, 
+			"net/minecraft/world/gen/feature/ConfiguredFeature", 
+			ASMAPI.mapMethod("func_222734_a"),  // ConfiguredFeature.place
+			"(Lnet/minecraft/world/IWorld;Lnet/minecraft/world/gen/ChunkGenerator;Ljava/util/Random;Lnet/minecraft/util/math/BlockPos;)Z"
+	)
 	
-	beforeList.add(new LabelNode())
-
-	beforeList.add(new VarInsnNode(ALOAD, 0)); // this
-	beforeList.add(new MethodInsnNode(INVOKESTATIC, "info/u_team/world_generation_profiler/hook/TestHook", "hook", "(Lnet/minecraft/world/biome/Biome;)V", false));
+	if(placeMethodNode == null) {
+		throw "Could not find call to func_222734_a"
+	}	
 	
-	beforeList.add(new LabelNode())
+	var insertStartTimerNode = instructions.get(instructions.indexOf(placeMethodNode) - 6)
+	if(insertStartTimerNode.getType() != 15) {
+		throw "The insert start timer node is not a line node"
+	}
+	instructions.insert(insertStartTimerNode, createStartTimerCode())
 	
-	instructions.insert(beforeList)
+	var insertStopTimerNode = instructions.get(instructions.indexOf(placeMethodNode) + 1)
+	if(insertStopTimerNode.getType() != 0) {
+		throw "The insert stop timer node is not a ins node"
+	}
+	instructions.insert(insertStopTimerNode, createStopTimerCode())
 	
-	list("AFTER ", instructions)
+	printInstructions(instructions)	
 }
 
-function list(be, instructions) {
-	print (be + "______________________________________________________________________________________________________")
+function createStartTimerCode() {
+	var insList = new InsList()
 	
-	instructions.forEach(function (item) {
-		print (getNameFromNode(item))
+	insList.add(ASMAPI.buildMethodCall(
+			"com/google/common/base/Stopwatch",
+			"createStarted",
+			"()Lcom/google/common/base/Stopwatch;",
+			ASMAPI.MethodType.STATIC
+	))
+	insList.add(new VarInsnNode(ASTORE, 20))
+	return insList;
+}
+
+function createStopTimerCode() {
+	var insList = new InsList()
+	
+	insList.add(new VarInsnNode(ALOAD, 20))
+	insList.add(ASMAPI.buildMethodCall(
+			"com/google/common/base/Stopwatch",
+			"stop",
+			"()Lcom/google/common/base/Stopwatch;",
+			ASMAPI.MethodType.VIRTUAL
+	))
+	insList.add(new InsnNode(POP))
+	return insList;
+}
+
+function printInstructions(instructions) {
+	instructions.forEach(function (node) {
+		printNode(node)
 	})
+}
+
+function printNode(node) {
+	var name = getNameFromNode(node)
+	if(name.equals("ERROR")) {
+		print (node)
+	} else {
+		if(node.getType() == 5) {
+			print (name + " : " + node.owner + "." +node.name + node.desc)
+		} else if(node.getType() == 2) {
+			print (name + " " + node.var)
+		} else {
+			print (name)
+		}
+	}
+}
+
+function getNameFromNode(node) {
+	var value = "ERROR";
+	opcodes.forEach(function (opcode) {
+		if(opcode.code == node.getOpcode()) {
+			value = opcode.name;
+			return;
+		}
+	})
+	return value
 }
 
 var opcodes = [{
@@ -681,14 +748,3 @@ var opcodes = [{
 	    code: 199
 	}
 ]
-
-function getNameFromNode(insnode) {
-	var value = "ERROR";
-	opcodes.forEach(function (opcode) {
-		if(opcode.code == insnode.getOpcode()) {
-			value = opcode.name;
-			return;
-		}
-	})
-	return value
-}
