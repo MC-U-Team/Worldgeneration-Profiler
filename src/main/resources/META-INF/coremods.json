@@ -1,3 +1,3 @@
 {
-	"Test Hook": "META-INF/test-transformer.js"
+	"Stopwatch Hook": "META-INF/stop-watch-transformer.js"
 }
