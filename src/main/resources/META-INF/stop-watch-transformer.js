@@ -32,43 +32,24 @@ function initializeCoreMod() {
 }
 
 function injectTimerAtBiomeDecorate(methodNode, instructions) {
-	var placeMethodNode = ASMAPI.findFirstMethodCall(
-			methodNode, 
-			ASMAPI.MethodType.VIRTUAL, 
-			"net/minecraft/world/gen/feature/ConfiguredFeature", 
-			ASMAPI.mapMethod("func_222734_a"),  // ConfiguredFeature.place
-			"(Lnet/minecraft/world/IWorld;Lnet/minecraft/world/gen/ChunkGenerator;Ljava/util/Random;Lnet/minecraft/util/math/BlockPos;)Z"
-	)
-	
-	if(placeMethodNode == null) {
-		throw "Could not find call to func_222734_a"
-	}	
-	
-	var insertStartTimerNode = instructions.get(instructions.indexOf(placeMethodNode) - 6)
-	if(insertStartTimerNode.getType() != 15) {
-		throw "The insert start timer node is not a line node"
-	}
-	instructions.insert(insertStartTimerNode, createStartTimerCode())
-	
-	var insertStopTimerNode = instructions.get(instructions.indexOf(placeMethodNode) + 1)
-	if(insertStopTimerNode.getType() != 0) {
-		throw "The insert stop timer node is not a ins node"
-	}
+	instructions.insert(createStartTimerCode())
 	
 	var stopTimerInsList = createStopTimerCode()
 	
 	stopTimerInsList.add(new VarInsnNode(ALOAD, 0))
-	stopTimerInsList.add(new VarInsnNode(ALOAD, 10))
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 1))
 	stopTimerInsList.add(new VarInsnNode(ALOAD, 7))
 	stopTimerInsList.add(new VarInsnNode(ALOAD, 20))
 	stopTimerInsList.add(ASMAPI.buildMethodCall(
 			"info/u_team/world_generation_profiler/hook/StopWatchHook",
 			"decorateHook",
-			"(Lnet/minecraft/world/biome/Biome;Lnet/minecraft/world/gen/feature/ConfiguredFeature;Lnet/minecraft/util/math/BlockPos;Lcom/google/common/base/Stopwatch;)V",
+			"(Lnet/minecraft/world/biome/Biome;Lnet/minecraft/world/gen/GenerationStage$Decoration;Lnet/minecraft/util/math/BlockPos;Lcom/google/common/base/Stopwatch;)V",
 			ASMAPI.MethodType.STATIC
 	))
 	
-	instructions.insert(insertStopTimerNode, stopTimerInsList)
+	
+	
+	instructions.insert(instructions.get(instructions.size()-3), stopTimerInsList)
 	 
 	printInstructions(instructions)	// Debug
 }

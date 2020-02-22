@@ -6,16 +6,13 @@ import com.google.common.base.Stopwatch;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.gen.feature.ConfiguredFeature;
+import net.minecraft.world.gen.GenerationStage;
 
 public class StopWatchHook {
 	
-	public static void decorateHook(Biome biome, ConfiguredFeature<?, ?> configuredFeature, BlockPos pos, Stopwatch stopWatch) {
+	public static void decorateHook(Biome biome, GenerationStage.Decoration stage, BlockPos pos, Stopwatch stopWatch) {
 		final long codeExecutionTime = stopWatch.elapsed(TimeUnit.MILLISECONDS);
-		
-		new RuntimeException().printStackTrace();
-		
-		System.out.println("Feature " + configuredFeature.feature.getRegistryName() + " took " + codeExecutionTime + " milliseconds to complete in biome " + biome.getRegistryName() + " at pos " + pos);
+		System.out.println("Decoration stage " + stage + " took " + codeExecutionTime + " milliseconds to complete in biome " + biome.getRegistryName() + " at chunk pos " + pos);
 	}
 	
 }
