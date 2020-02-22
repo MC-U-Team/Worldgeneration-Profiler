@@ -24,15 +24,14 @@ function initializeCoreMod() {
 				"methodDesc" : "(Lnet/minecraft/world/gen/GenerationStage$Decoration;Lnet/minecraft/world/gen/ChunkGenerator;Lnet/minecraft/world/IWorld;JLnet/minecraft/util/SharedSeedRandom;Lnet/minecraft/util/math/BlockPos;)V"
 			},
 			"transformer" : function(methodNode) {
-				injectTimerStart(methodNode, methodNode.instructions);
+				injectTimerAtBiomeDecorate(methodNode, methodNode.instructions);
 				return methodNode;
 			}
 		}
 	}
 }
 
-function injectTimerStart(methodNode, instructions) {
-		
+function injectTimerAtBiomeDecorate(methodNode, instructions) {
 	var placeMethodNode = ASMAPI.findFirstMethodCall(
 			methodNode, 
 			ASMAPI.MethodType.VIRTUAL, 
@@ -56,8 +55,8 @@ function injectTimerStart(methodNode, instructions) {
 		throw "The insert stop timer node is not a ins node"
 	}
 	instructions.insert(insertStopTimerNode, createStopTimerCode())
-	
-	printInstructions(instructions)	
+	 
+	printInstructions(instructions)	//Debug
 }
 
 function createStartTimerCode() {
@@ -86,6 +85,10 @@ function createStopTimerCode() {
 	insList.add(new InsnNode(POP))
 	return insList;
 }
+
+// ------------------------------------------------
+// DEBUG
+// ------------------------------------------------
 
 function printInstructions(instructions) {
 	instructions.forEach(function (node) {
