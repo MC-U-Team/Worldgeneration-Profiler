@@ -24,6 +24,8 @@ public class CommonConfig {
 		return INSTANCE;
 	}
 	
+	public final BooleanValue logInDefaultLog;
+	
 	private final Map<ChunkStatus, IntValue> chunkStatusThresholdMap = new HashMap<>();
 	
 	public Map<ChunkStatus, IntValue> getChunkStatusThresholdMap() {
@@ -31,6 +33,7 @@ public class CommonConfig {
 	}
 	
 	private CommonConfig(Builder builder) {
+		logInDefaultLog = builder.comment("If true the log messages will also be logged to the console and the log files. If false all messages will only be logged to the world-generation-profiler.log file").define("logInDefaultLog", true);
 		builder.comment("Chunk status threshold warn settings").push("chunkStatusThreshold");
 		ForgeRegistries.CHUNK_STATUS.forEach(chunkStatus -> {
 			chunkStatusThresholdMap.put(chunkStatus, builder.defineInRange(chunkStatus.getRegistryName().toString(), 50, 0, 1000));
