@@ -33,7 +33,7 @@ public class CommonConfig {
 	private CommonConfig(Builder builder) {
 		builder.comment("Chunk status threshold warn settings").push("chunkStatusThreshold");
 		ForgeRegistries.CHUNK_STATUS.forEach(chunkStatus -> {
-			chunkStatusThresholdMap.put(chunkStatus, builder.defineInRange(chunkStatus.getRegistryName().toString(), 20, 0, 1000));
+			chunkStatusThresholdMap.put(chunkStatus, builder.defineInRange(chunkStatus.getRegistryName().toString(), 50, 0, 1000));
 		});
 		builder.pop();
 	}
