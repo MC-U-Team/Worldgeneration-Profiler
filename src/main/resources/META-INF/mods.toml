@@ -11,7 +11,7 @@ authors="HyCraftHD"
 	version="${file.jarVersion}"
 	displayName="World Generation Profiler"
 	updateJSONURL="https://api.u-team.info/update/worldgenerationprofiler.json"
-	description="Mod which profiles your worldgeneration."
+	description="Mod which profiles your worldgeneration. Is not really that accurate anymore because the world generation is now multithreaded. Can still be a good indicator when a mod adds laggy chunk generation."
 	
 	[[dependencies.worldgenerationprofiler]]
 	    modId="forge"
