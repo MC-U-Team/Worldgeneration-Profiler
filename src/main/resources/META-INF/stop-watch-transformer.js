@@ -3,58 +3,88 @@ function initializeCoreMod() {
 	
 	ASMAPI = Java.type("net.minecraftforge.coremod.api.ASMAPI")
 	
+	AbstractInsnNode = Java.type("org.objectweb.asm.tree.AbstractInsnNode")
 	VarInsnNode = Java.type("org.objectweb.asm.tree.VarInsnNode")
 	MethodInsnNode = Java.type("org.objectweb.asm.tree.MethodInsnNode")
 	InsnNode = Java.type("org.objectweb.asm.tree.InsnNode")
 	InsList = Java.type("org.objectweb.asm.tree.InsnList")
 	LabelNode = Java.type("org.objectweb.asm.tree.LabelNode")
 	
+	LINE = AbstractInsnNode.LINE
+	
 	INVOKESTATIC = Opcodes.INVOKESTATIC
 	INVOKEVIRTUAL = Opcodes.INVOKEVIRTUAL
 	ALOAD = Opcodes.ALOAD
 	ASTORE = Opcodes.ASTORE
 	POP = Opcodes.POP
+	DUP = Opcodes.DUP
+	NOOPCODE = -1
 
 	return {
-		"Biome#decorate" : {
+		"ChunkStatus#doGenerationWork" : {
 			"target" : {
 				"type" : "METHOD",
-				"class" : "net.minecraft.world.biome.Biome",
-				"methodName" : "func_203608_a",
-				"methodDesc" : "(Lnet/minecraft/world/gen/GenerationStage$Decoration;Lnet/minecraft/world/gen/ChunkGenerator;Lnet/minecraft/world/IWorld;JLnet/minecraft/util/SharedSeedRandom;Lnet/minecraft/util/math/BlockPos;)V"
+				"class" : "net.minecraft.world.chunk.ChunkStatus",
+				"methodName" : "func_223198_a",
+				"methodDesc" : "(Lnet/minecraft/world/server/ServerWorld;Lnet/minecraft/world/gen/ChunkGenerator;Lnet/minecraft/world/gen/feature/template/TemplateManager;Lnet/minecraft/world/server/ServerWorldLightManager;Ljava/util/function/Function;Ljava/util/List;)Ljava/util/concurrent/CompletableFuture;"
 			},
 			"transformer" : function(methodNode) {
-				injectTimerAtBiomeDecorate(methodNode, methodNode.instructions);
+				injectTimerAtDoGenerationWork(methodNode, methodNode.instructions);
 				return methodNode;
 			}
 		}
 	}
 }
 
-function injectTimerAtBiomeDecorate(methodNode, instructions) {
-	instructions.insert(createStartTimerCode())
+function injectTimerAtDoGenerationWork(methodNode, instructions) {
+	var doWorkMethodNode = ASMAPI.findFirstMethodCall(
+			methodNode, 
+			ASMAPI.MethodType.INTERFACE, 
+			"net/minecraft/world/chunk/ChunkStatus$IGenerationWorker", 
+			ASMAPI.mapMethod("doWork"),  // ChunkStatus$IGenerationWorker.doWork
+			"(Lnet/minecraft/world/chunk/ChunkStatus;Lnet/minecraft/world/server/ServerWorld;Lnet/minecraft/world/gen/ChunkGenerator;Lnet/minecraft/world/gen/feature/template/TemplateManager;Lnet/minecraft/world/server/ServerWorldLightManager;Ljava/util/function/Function;Ljava/util/List;Lnet/minecraft/world/chunk/IChunk;)Ljava/util/concurrent/CompletableFuture;"
+	)
+	if(doWorkMethodNode == null) {
+		throw "Could not find call to ChunkStatus$IGenerationWorker.doWork"
+	}	
 	
-	var stopTimerInsList = createStopTimerCode()
+	insertStartTimerNode = findInstructionTypeBefore(instructions, LINE, NOOPCODE, doWorkMethodNode)
+	if(findInstructionTypeBefore == null) {
+		throw "The insert start timer node could not be found"
+	}
 	
-	stopTimerInsList.add(new VarInsnNode(ALOAD, 0))
-	stopTimerInsList.add(new VarInsnNode(ALOAD, 1))
-	stopTimerInsList.add(new VarInsnNode(ALOAD, 7))
-	stopTimerInsList.add(new VarInsnNode(ALOAD, 20))
+	var startTimerInsList = new InsList()
+	startTimerInsList.add(createStartTimerCode(8)) // Inject Stopwatch.createNew and store on local variable 16
+	instructions.insert(insertStartTimerNode, startTimerInsList)
+	
+	var storeChunkValueInsList = new InsList()
+	storeChunkValueInsList.add(new InsnNode(DUP)) // Duplicate current stack stop
+	storeChunkValueInsList.add(new VarInsnNode(ASTORE, 9)) // Store current stack top (IChunk) before the doWork method is called on local variable 14
+	instructions.insertBefore(doWorkMethodNode, storeChunkValueInsList)
+	
+	var stopTimerInsList = new InsList()
+	stopTimerInsList.add(new VarInsnNode(ASTORE, 10)) // Store return value of doWork method in local variable 15
+	
+	stopTimerInsList.add(createStopTimerCode(8)) // Inject Stopwatch.stop code
+	
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 0)) // Load this
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 9)) // Load IChunk value
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 8)) // Load stopwatch
 	stopTimerInsList.add(ASMAPI.buildMethodCall(
 			"info/u_team/world_generation_profiler/hook/StopWatchHook",
-			"decorateHook",
-			"(Lnet/minecraft/world/biome/Biome;Lnet/minecraft/world/gen/GenerationStage$Decoration;Lnet/minecraft/util/math/BlockPos;Lcom/google/common/base/Stopwatch;)V",
+			"doGenerationWorkHook",
+			"(Lnet/minecraft/world/chunk/ChunkStatus;Lnet/minecraft/world/chunk/IChunk;Lcom/google/common/base/Stopwatch;)V",
 			ASMAPI.MethodType.STATIC
-	))
+	)) // Inject method call to our hook
 	
+	stopTimerInsList.add(new VarInsnNode(ALOAD, 10)) // Load the original return value from local variable 15 that will be returned
 	
-	
-	instructions.insert(instructions.get(instructions.size()-3), stopTimerInsList)
+	instructions.insert(doWorkMethodNode, stopTimerInsList)
 	 
-	printInstructions(instructions)	// Debug
+	//printInstructions(instructions)	// Debug
 }
 
-function createStartTimerCode() {
+function createStartTimerCode(local) {
 	var insList = new InsList()
 	
 	insList.add(ASMAPI.buildMethodCall(
@@ -63,14 +93,14 @@ function createStartTimerCode() {
 			"()Lcom/google/common/base/Stopwatch;",
 			ASMAPI.MethodType.STATIC
 	))
-	insList.add(new VarInsnNode(ASTORE, 20))
+	insList.add(new VarInsnNode(ASTORE, local))
 	return insList;
 }
 
-function createStopTimerCode() {
+function createStopTimerCode(local) {
 	var insList = new InsList()
 	
-	insList.add(new VarInsnNode(ALOAD, 20))
+	insList.add(new VarInsnNode(ALOAD, local))
 	insList.add(ASMAPI.buildMethodCall(
 			"com/google/common/base/Stopwatch",
 			"stop",
@@ -79,6 +109,16 @@ function createStopTimerCode() {
 	))
 	insList.add(new InsnNode(POP))
 	return insList;
+}
+
+function findInstructionTypeBefore(instructions, type, opcode, startNode) {
+	for (var index = Math.min(instructions.size() - 1, instructions.indexOf(startNode)); index >= 0; index--) {
+		var node = instructions.get(index);
+		if (node.getType() == type && node.getOpcode() == opcode) {
+			return node;
+		}
+	}
+	return null;
 }
 
 // ------------------------------------------------
