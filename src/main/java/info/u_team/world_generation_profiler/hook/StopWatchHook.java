@@ -1,13 +1,15 @@
 package info.u_team.world_generation_profiler.hook;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 
 import info.u_team.world_generation_profiler.WorldGenerationProfilerMod;
 import info.u_team.world_generation_profiler.config.CommonConfig;
-import net.minecraft.world.chunk.*;
+import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.world.chunk.IChunk;
 
 public class StopWatchHook {
 	
