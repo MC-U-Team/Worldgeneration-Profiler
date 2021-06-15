@@ -81,7 +81,7 @@ function injectTimerAtDoGenerationWork(methodNode, instructions) {
 
 	instructions.insert(doWorkMethodNode, stopTimerInsList)
 
-	print("Injected world generation profiler hook into func_223198_a")
+	print("[World Generation Profiler] Injected world generation profiler hook into func_223198_a")
 	//printInstructions(instructions)	// Debug
 }
 
@@ -138,7 +138,7 @@ function printNode(node) {
 		print(node)
 	} else {
 		if (node.getType() == 5) {
-			print(name + " : " + node.owner + "." + node.name + node.desc)
+			print(name + " : " + node.owner + "." +  node.name + node.desc)
 		} else if (node.getType() == 2) {
 			print(name + " " + node.var)
 		} else {
