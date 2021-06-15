@@ -3,6 +3,7 @@ package info.u_team.world_generation_profiler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import info.u_team.u_team_core.util.annotation.AnnotationManager;
 import info.u_team.u_team_core.util.verify.JarSignVerifier;
 import net.minecraftforge.fml.common.Mod;
 
@@ -15,5 +16,7 @@ public class WorldGenerationProfilerMod {
 	
 	public WorldGenerationProfilerMod() {
 		JarSignVerifier.checkSigned(MODID);
+		
+		AnnotationManager.callAnnotations(MODID);
 	}
 }
